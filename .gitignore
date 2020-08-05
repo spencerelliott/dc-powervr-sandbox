@@ -1,0 +1,5 @@
+.vscode
+*.o
+*.img
+*.elf
+compile_commands.json
