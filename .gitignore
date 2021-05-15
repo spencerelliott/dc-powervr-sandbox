@@ -2,4 +2,6 @@
 *.o
 *.img
 *.elf
+*.bin
+*.cdi
 compile_commands.json

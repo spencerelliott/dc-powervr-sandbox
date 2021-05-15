@@ -8,7 +8,7 @@ TARGET = ../bin/PVRTest.elf
 
 # List all of your C files here, but change the extension to ".o"
 # Include "romdisk.o" if you want a rom disk.
-OBJS = main.o
+OBJS = main.o unim/core.o
 
 # If you define this, the Makefile.rules will create a romdisk.o for you
 # from the named dir.
@@ -22,6 +22,8 @@ include $(KOS_BASE)/Makefile.rules
 
 clean:
 	-rm -f $(TARGET) $(OBJS) romdisk.*
+	-rm -f ../bin/*.cdi
+	-rm -f ../bin/*.bin
 
 rm-elf:
 	-rm -f $(TARGET) romdisk.*
@@ -32,6 +34,9 @@ $(TARGET): $(OBJS) romdisk.o
 
 run: $(TARGET)
 	$(KOS_LOADER) $(TARGET)
+
+cdi: $(TARGET)
+	cd ../bin; ./build_cdi.sh PVRTest
 
 dist:
 	rm -f $(OBJS) romdisk.o romdisk.img
