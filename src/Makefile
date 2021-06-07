@@ -4,7 +4,8 @@
 #   
 
 # Put the filename of the output binary here
-TARGET = ../bin/PVRTest.elf
+TARGET_NAME = PVRTest
+TARGET = ../bin/$(TARGET_NAME).elf
 
 # List all of your C files here, but change the extension to ".o"
 # Include "romdisk.o" if you want a rom disk.
@@ -24,6 +25,7 @@ clean:
 	-rm -f $(TARGET) $(OBJS) romdisk.*
 	-rm -f ../bin/*.cdi
 	-rm -f ../bin/*.bin
+	-rm -f ../bin/*.BIN
 
 rm-elf:
 	-rm -f $(TARGET) romdisk.*
@@ -36,7 +38,10 @@ run: $(TARGET)
 	$(KOS_LOADER) $(TARGET)
 
 cdi: $(TARGET)
-	cd ../bin; ./build_cdi.sh PVRTest
+	sh-elf-objcopy -R .stack -O binary $(TARGET) ../bin/$(TARGET_NAME).bin
+	${KOS_BASE}/utils/scramble/scramble ../bin/$(TARGET_NAME).bin ../cd/1ST_READ.bin
+	${KOS_BASE}/utils/makeip/src/makeip -vf ../bin/IP.BIN
+	cd ../cd; ${KOS_BASE}/utils/makedisc ../bin/$(TARGET_NAME).cdi . ../bin/IP.BIN $(TARGET_NAME)
 
 dist:
 	rm -f $(OBJS) romdisk.o romdisk.img
