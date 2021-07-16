@@ -3,5 +3,6 @@
 *.img
 *.elf
 *.bin
+*.BIN
 *.cdi
 compile_commands.json

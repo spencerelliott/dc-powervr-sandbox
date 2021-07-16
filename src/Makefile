@@ -26,6 +26,8 @@ clean:
 	-rm -f ../bin/*.cdi
 	-rm -f ../bin/*.bin
 	-rm -f ../bin/*.BIN
+	-rm -f ../cd/*.BIN
+	-rm -f ../cd/*.bin
 
 rm-elf:
 	-rm -f $(TARGET) romdisk.*
@@ -39,8 +41,8 @@ run: $(TARGET)
 
 cdi: $(TARGET)
 	sh-elf-objcopy -R .stack -O binary $(TARGET) ../bin/$(TARGET_NAME).bin
-	${KOS_BASE}/utils/scramble/scramble ../bin/$(TARGET_NAME).bin ../cd/1ST_READ.bin
-	${KOS_BASE}/utils/makeip/src/makeip -vf ../bin/IP.BIN
+	${KOS_BASE}/utils/scramble/scramble ../bin/$(TARGET_NAME).bin ../cd/1ST_READ.BIN
+	${KOS_BASE}/utils/makeip/makeip -vf ../bin/IP.BIN
 	cd ../cd; ${KOS_BASE}/utils/makedisc ../bin/$(TARGET_NAME).cdi . ../bin/IP.BIN $(TARGET_NAME)
 
 dist:

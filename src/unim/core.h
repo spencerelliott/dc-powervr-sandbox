@@ -8,6 +8,11 @@
 
 #define UNIM_VERSION 0x07E40001 // High byte is year (2020), low byte is revision (1)
 
+typedef enum {
+    UNIM_OK,
+    UNIM_ERROR
+} unim_result_t;
+
 typedef struct {
     int canvas_width;
     int canvas_height;
@@ -75,6 +80,8 @@ typedef struct {
     unim_track_object_t *track_objects;
 } unim_t;
 
-unim_t unim_init(void);
+unim_result_t unim_init(unim_t*, const char*, const char*);
+void unim_tick(unim_t*);
+void unim_play_animation(unim_t*, const char*);
 
 #endif

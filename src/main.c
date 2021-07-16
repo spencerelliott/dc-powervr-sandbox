@@ -17,7 +17,9 @@
 #include <kos/vector.h>
 
 #include "debug.h"
-#include "unim/core.h"
+#include "unim/unim.h"
+
+#define UNIM_PLATFORM PLATFORM_DREAMCAST
 
 #define PACK_COLOR32(r, g, b, a) (((a & 0xFF) << 24) | ((r << 16) & 0xFF) | ((g << 8) & 0xFF) | (b & 0xFF))
 
@@ -33,6 +35,9 @@ int main(int argc, char *argv[]) {
     #endif
 
     unim_t unim;
+
+    unim_init(&unim, "UnimMech.bytes", "UnimMech.png");
+    unim_play_animation(&unim, "Idle");
 
     pvr_init_defaults();
     pvr_set_bg_color(1.0f, 0.0f, 0.0f);
