@@ -1,12 +1,20 @@
 #ifndef __CORE_H__
 #define __CORE_H__
 
+#ifdef DREAMCAST
 #include <arch/types.h>
+#else
+#include <stdint-gcc.h>
+#endif
 #include <stdbool.h>
 
 #include "types.h"
 
 #define UNIM_VERSION 0x07E40001 // High byte is year (2020), low byte is revision (1)
+
+#ifndef DREAMCAST
+typedef uint16_t uint16;
+#endif
 
 typedef enum {
     UNIM_OK,
