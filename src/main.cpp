@@ -1,10 +1,12 @@
 #include "debug.h"
 #include "unim/unim.h"
 #include "platform/platform.h"
+#include "game/game.h"
 
 #ifdef DREAMCAST
 #define UNIM_PLATFORM PLATFORM_DREAMCAST
 #else
+#undef UNIM_PLATFORM
 #define UNIM_PLATFORM PLATFORM_PC
 #endif
 
@@ -18,14 +20,18 @@ KOS_INIT_ROMDISK(romdisk);
 #endif
 
 int main(int argc, char *argv[]) {
-    preinit_platform();
+    Platform *platform = Platform::Get();
+    Game game;
 
-    unim_t unim;
+    game.SetPlatform(platform);
 
-    unim_init(&unim, "UnimMech.bytes", "UnimMech.png");
-    unim_play_animation(&unim, "Idle");
+    platform->PreInit();
 
-    init_platform();
+    Unim unim("", "");
+    unim.PlayAnimation("Idle");
+
+    platform->Init();
+    game.Init();
 
     #ifdef DREAMCAST
     while(1) {
@@ -55,7 +61,8 @@ int main(int argc, char *argv[]) {
     }
     #endif
 
-    cleanup_platform();
+    game.Cleanup();
+    platform->Cleanup();
 
     return 0;  
 }

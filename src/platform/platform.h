@@ -1,8 +1,16 @@
 #ifndef __PLATFORM_PLATFORM_H__
 #define __PLATFORM_PLATFORM_H__
 
-void preinit_platform(void);
-void init_platform(void);
-void cleanup_platform(void);
+
+class Platform {
+    public:
+        static Platform* Get();
+        virtual void PreInit(void) {};
+        virtual void Init(void) {};
+        virtual void Cleanup(void) {};
+    private:
+        const char * const name;
+        static Platform* platform;
+};
 
 #endif

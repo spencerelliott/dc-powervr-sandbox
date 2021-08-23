@@ -16,10 +16,10 @@
 typedef uint16_t uint16;
 #endif
 
-typedef enum {
-    UNIM_OK,
-    UNIM_ERROR
-} unim_result_t;
+enum class UnimResult {
+    OK = 0,
+    ERROR
+};
 
 typedef struct {
     int canvas_width;
@@ -88,8 +88,19 @@ typedef struct {
     unim_track_object_t *track_objects;
 } unim_t;
 
-unim_result_t unim_init(unim_t*, const char*, const char*);
-void unim_tick(unim_t*);
-void unim_play_animation(unim_t*, const char*);
+class Unim {
+    public:
+        Unim(const char *, const char *);
+        void Tick(void);
+        UnimResult PlayAnimation(const char *);
+    private:
+        unim_scene_t scene;
+        uint16 max_sprites;
+        unim_clip_t *clips;
+        unim_triggers_t *triggers;
+        unim_sprite_t *sprites;
+        unim_animation_data_t **animation_data;
+        unim_track_object_t *track_objects;
+};
 
 #endif

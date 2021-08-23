@@ -3,7 +3,7 @@
 
 #include "platforms.h"
 
-#if UNIM_PLATFORM == PLATFORM_DREAMCAST
+#if UNIM_PLATFORM == DREAMCAST
 #   include "dc/render.h"
 #elif UNIM_PLATFORM == PLATFORM_PC
 #   include "pc/render.h"
