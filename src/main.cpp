@@ -21,6 +21,11 @@ KOS_INIT_ROMDISK(romdisk);
 
 int main(int argc, char *argv[]) {
     Platform *platform = Platform::Get();
+
+    if (platform) {
+        printf("Platform: %s\n", platform->GetName());
+    }
+
     Game game;
 
     game.SetPlatform(platform);

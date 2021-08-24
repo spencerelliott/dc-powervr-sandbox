@@ -2,15 +2,20 @@
 
 #include "common.h"
 #include "platform.h"
+#include "pc.h"
 
-void preinit_platform() {
+PcPlatform::PcPlatform() {
+    this->name = "PC";
+}
+
+void PcPlatform::PreInit() {
+    printf("Hello from %s!\n", PROJECT_NAME);
+}
+
+void PcPlatform::Init() {
 
 }
 
-void init_platform() {
-    printf("Hello from the PC version of %s!\n", PROJECT_NAME);
-}
-
-void cleanup_platform() {
+void PcPlatform::Cleanup() {
 
 }
