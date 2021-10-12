@@ -21,6 +21,7 @@ set(
     src/game/game.cpp
     src/unim/core.cpp
     src/platform/platform.cpp
+    src/renderer/renderer.cpp
 )
 
 if(PLATFORM_DREAMCAST)
@@ -44,8 +45,13 @@ if(PLATFORM_DREAMCAST)
 
     add_definitions(-DDREAMCAST)
     set(SOURCES ${SOURCES} src/platform/dreamcast.cpp)
+
+    link_libraries(GLdc)
 else()
     set(SOURCES ${SOURCES} src/platform/pc.cpp)
+
+    link_libraries(GL)
+    link_libraries(GLU)
 endif()
 
 execute_process(
@@ -55,11 +61,10 @@ execute_process(
 )
 
 #configure_file(GL/version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-
 link_libraries(m)
 
 if(PLATFORM_DREAMCAST)
-    add_executable(PVRTest.elf ${EXTRA_OBJS} ${SOURCES})
+    add_executable(PVRTest ${EXTRA_OBJS} ${SOURCES})
 else()
     add_definitions(-g)
     if(WIN32)

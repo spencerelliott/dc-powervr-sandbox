@@ -2,6 +2,7 @@
 #include "unim/unim.h"
 #include "platform/platform.h"
 #include "game/game.h"
+#include "renderer/renderer.h"
 
 #ifdef DREAMCAST
 #define UNIM_PLATFORM PLATFORM_DREAMCAST
