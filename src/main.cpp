@@ -39,6 +39,18 @@ int main(int argc, char *argv[]) {
     platform->Init();
     game.Init();
 
+
+    while(game.IsRunning()) {
+        bool shouldRun = platform->ProcessFrame();
+
+        // If the platform needs to exit right away, do it here
+        if (!shouldRun) {
+            break;
+        }
+
+        game.Update();
+    }
+
     #ifdef DREAMCAST
     while(1) {
         vram_s[0] = 0x1FF << 5;

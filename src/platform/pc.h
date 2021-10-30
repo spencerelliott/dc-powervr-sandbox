@@ -9,6 +9,7 @@ class PcPlatform : virtual public Platform {
         PcPlatform();
         void PreInit(void);
         void Init(void);
+        bool ProcessFrame();
         void Cleanup(void);
 };
 

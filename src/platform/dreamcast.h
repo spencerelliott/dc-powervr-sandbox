@@ -9,6 +9,7 @@ class DreamcastPlatform : virtual public Platform {
         DreamcastPlatform();
         void PreInit(void);
         void Init(void);
+        bool ProcessFrame();
         void Cleanup(void);
 };
 

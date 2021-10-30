@@ -14,6 +14,10 @@ void DreamcastPlatform::Init() {
 
 }
 
+bool DreamcastPlatform::ProcessFrame() {
+    return false;
+}
+
 void DreamcastPlatform::Cleanup() {
 
 }
