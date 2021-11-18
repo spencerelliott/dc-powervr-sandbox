@@ -2,14 +2,10 @@
 
 #include "common.h"
 #include "platform.h"
-#include "pc.h"
+#include "platform_pc.h"
 
 PcPlatform::PcPlatform() {
     this->name = "PC";
-}
-
-void PcPlatform::PreInit() {
-    printf("Hello from %s!\n", PROJECT_NAME);
 }
 
 void PcPlatform::Init() {

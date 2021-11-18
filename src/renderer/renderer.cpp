@@ -1,29 +1,23 @@
-#ifdef DREAMCAST
-#include <kos.h>
-#include "GL/glkos.h"
-#endif
-
-#include "GL/gl.h"
-#include "GL/glu.h"
-
 #include "renderer.h"
 
-void Renderer::Init() {
-    #ifdef DREAMCAST
-    glKosInit();
+#ifndef DREAMCAST
+
+#elif defined(DREAMCAST)
+#include "renderer_dc.h"
+#endif
+
+Renderer* Renderer::renderer = nullptr;
+
+Renderer* const Renderer::Get() {
+    if (Renderer::renderer != nullptr) {
+        return Renderer::renderer;
+    }
+
+    #ifndef DREAMCAST
+    
+    #elif defined(DREAMCAST)
+    Renderer::renderer = new DreamcastRenderer();
     #endif
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepth(1.0f);
-    glDepthFunc(GL_LESS);
-    glShadeModel(GL_PROJECTION);
-    glLoadIdentity();
-
-    gluOrtho2D(0, 640, 0, 480);
-
-    glMatrixMode(GL_MODELVIEW);
-}
-
-void Renderer::Resize(unsigned int width, unsigned int height) {
-
+    return Renderer::renderer;
 }

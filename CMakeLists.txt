@@ -10,6 +10,7 @@ set(ROMDISK_DIR "${CMAKE_SOURCE_DIR}/romdisk")
 message("\nPLATFORM_DREAMCAST: ${PLATFORM_DREAMCAST}")
 
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
 
 include_directories(src)
 
@@ -18,11 +19,14 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 --fast-math")
 set(
     SOURCES
     src/main.cpp
+    src/debug.cpp
     src/game/game.cpp
-    src/unim/core.cpp
     src/platform/platform.cpp
-    src/renderer/renderer.cpp
 )
+
+if(ENGINE_DEBUG)
+    add_definitions(-DENGINE_DEBUG)
+endif()
 
 if(PLATFORM_DREAMCAST)
     if(EXISTS ${ROMDISK_DIR})
@@ -44,11 +48,12 @@ if(PLATFORM_DREAMCAST)
     endif()
 
     add_definitions(-DDREAMCAST)
-    set(SOURCES ${SOURCES} src/platform/dreamcast.cpp)
+    set(SOURCES ${SOURCES} src/platform/platform_dc.cpp)
+    set(SOURCES ${SOURCES} src/renderer/renderer_dc.cpp)
 
     link_libraries(GLdc)
 else()
-    set(SOURCES ${SOURCES} src/platform/pc.cpp)
+    set(SOURCES ${SOURCES} src/platform/platform_pc.cpp)
 
     link_libraries(GL)
     link_libraries(GLU)

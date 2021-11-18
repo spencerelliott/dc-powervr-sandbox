@@ -1,13 +1,9 @@
 #include "common.h"
 #include "platform.h"
-#include "dreamcast.h"
+#include "platform_dc.h"
 
 DreamcastPlatform::DreamcastPlatform() {
     this->name = "Dreamcast";
-}
-
-void DreamcastPlatform::PreInit() {
-    
 }
 
 void DreamcastPlatform::Init() {

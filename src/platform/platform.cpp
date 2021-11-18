@@ -1,9 +1,9 @@
 #include "platform.h"
 
 #ifndef DREAMCAST
-#include "pc.h"
+#include "platform_pc.h"
 #else
-#include "dreamcast.h"
+#include "platform_dc.h"
 #endif
 
 Platform* Platform::platform = nullptr;
@@ -15,8 +15,8 @@ Platform* const Platform::Get() {
 
     #ifndef DREAMCAST
     Platform::platform = new PcPlatform();
-    #else
-
+    #elif defined(DREAMCAST)
+    Platform::platform = new DreamcastPlatform();
     #endif
 
     return Platform::platform;

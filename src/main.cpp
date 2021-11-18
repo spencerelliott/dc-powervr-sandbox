@@ -1,19 +1,14 @@
 #include "debug.h"
-#include "unim/unim.h"
 #include "platform/platform.h"
 #include "game/game.h"
 #include "renderer/renderer.h"
 
-#ifdef DREAMCAST
-#define UNIM_PLATFORM PLATFORM_DREAMCAST
-#else
-#undef UNIM_PLATFORM
-#define UNIM_PLATFORM PLATFORM_PC
-#endif
 
 #define PACK_COLOR32(r, g, b, a) (((a & 0xFF) << 24) | ((r << 16) & 0xFF) | ((g << 8) & 0xFF) | (b & 0xFF))
 
 #ifdef DREAMCAST
+#include <kos.h>
+
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MALLOCSTATS);
 
 extern uint8 romdisk[];
@@ -30,11 +25,6 @@ int main(int argc, char *argv[]) {
     Game game;
 
     game.SetPlatform(platform);
-
-    platform->PreInit();
-
-    Unim unim("", "");
-    unim.PlayAnimation("Idle");
 
     platform->Init();
     game.Init();
