@@ -22,6 +22,10 @@ set(
     src/debug.cpp
     src/game/game.cpp
     src/platform/platform.cpp
+    src/scene/scene.cpp
+    src/components/light.cpp
+    src/components/sprite.cpp
+    src/components/actor.cpp
 )
 
 if(ENGINE_DEBUG)
