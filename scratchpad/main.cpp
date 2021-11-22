@@ -18,6 +18,7 @@
 #include <kmg/kmg.h>
 
 #include <kos.h>
+#include <math.h>
 
 static pvr_vertex_t verts[2 * 4];
 
@@ -38,6 +39,15 @@ extern uint8 romdisk[];
 KOS_INIT_ROMDISK(romdisk);
 
 #define CLAMP(low, high, value) (value < low ? low : (value > high ? high : value))
+
+typedef struct Vector2 {
+    float x;
+    float y;
+} Vector2_t;
+
+float angle_between(Vector2_t* v1, Vector2_t* v2) {
+    return atan2f(v2->y - v1->y, v2->x - v1->x) * 180.0f / F_PI;
+}
 
 static pvr_ptr_t load_texture(const char fn[]) {
     FILE *fp;
