@@ -9,6 +9,7 @@
 #include <time.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <dc/pvr.h>
 #include <dc/maple.h>
@@ -45,8 +46,17 @@ typedef struct Vector2 {
     float y;
 } Vector2_t;
 
+static Vector2_t light_pos;
+
 float angle_between(Vector2_t* v1, Vector2_t* v2) {
-    return atan2f(v2->y - v1->y, v2->x - v1->x) * 180.0f / F_PI;
+    return atan2f(v2->y - v1->y, v2->x - v1->x);
+}
+
+float distance_from(Vector2_t* from, Vector2_t* to) {
+    float dx = to->x - from->x;
+    float dy = to->y - from->y;
+
+    return abs(sqrtf(dx*dx + dy*dy));
 }
 
 static pvr_ptr_t load_texture(const char fn[]) {
@@ -197,17 +207,22 @@ static int check_start() {
     return 0;
 }
 
-static void draw_sprite(float x, float y, float w, float h) {
+static void draw_sprite(pvr_ptr_t sprite, float x, float y, float w, float h, bool is_bumped) {
     pvr_poly_cxt_t ctx;
     pvr_poly_hdr_t hdr;
     pvr_vertex_t vert;
 
     pvr_poly_cxt_txr(&ctx, PVR_LIST_PT_POLY,
                        PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED |
-                       PVR_TXRFMT_VQ_ENABLE, 256, 256, txr, PVR_FILTER_NONE);
+                       PVR_TXRFMT_VQ_ENABLE, 256, 256, sprite, PVR_FILTER_NONE);
 
-    ctx.blend.src = PVR_BLEND_DESTCOLOR;
-    ctx.blend.dst = PVR_BLEND_ZERO;
+    if (is_bumped) {
+        ctx.blend.src = PVR_BLEND_DESTCOLOR;
+        ctx.blend.dst = PVR_BLEND_ZERO;
+    } else {
+        ctx.blend.src = PVR_BLEND_ONE;
+        ctx.blend.dst = PVR_BLEND_ONE;
+    }
 
     pvr_poly_compile(&hdr, &ctx);
 
@@ -217,8 +232,8 @@ static void draw_sprite(float x, float y, float w, float h) {
     vert.oargb = 0;
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f - 128.0f;
-    vert.y = 240.0f - 128.0f;
+    vert.x = x - w;
+    vert.y = y - h;
     vert.z = 1.0f;
     vert.u = 0.0f;
     vert.v = 0.0f;
@@ -226,8 +241,8 @@ static void draw_sprite(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f + 128.0f;
-    vert.y = 240.0f - 128.0f;
+    vert.x = x + w;
+    vert.y = y - h;
     vert.z = 1.0f;
     vert.u = 1.0f;
     vert.v = 0.0f;
@@ -235,8 +250,8 @@ static void draw_sprite(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f - 128.0f;
-    vert.y = 240.0f + 128.0f;
+    vert.x = x - w;
+    vert.y = y + h;
     vert.z = 1.0f;
     vert.u = 0.0f;
     vert.v = 1.0f;
@@ -244,8 +259,8 @@ static void draw_sprite(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX_EOL;
-    vert.x = 320.0f + 128.0f;
-    vert.y = 240.0f + 128.0f;
+    vert.x = x + w;
+    vert.y = y + h;
     vert.z = 1.0f;
     vert.u = 1.0f;
     vert.v = 1.0f;
@@ -253,15 +268,19 @@ static void draw_sprite(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 }
 
-static void draw_bump(float x, float y, float w, float h) {
+static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h) {
     pvr_poly_cxt_t ctx;
     pvr_poly_hdr_t hdr;
     pvr_vertex_t vert;
 
-    float angle = ((float)(++counter % 240) / 240.0f) * (F_PI * 2.0f);
+    Vector2_t pos = {.x = x, y = y};
+
+    // float angle = ((float)(++counter % 240) / 240.0f) * (F_PI * 2.0f);
+    float angle = angle_between(&pos, &light_pos);
+    bumpiness = CLAMP(0.2f, 1.0f, distance_from(&pos, &light_pos) / 200.0f);
 
     pvr_poly_cxt_txr(&ctx, PVR_LIST_OP_POLY,
-                       PVR_TXRFMT_BUMP | PVR_TXRFMT_TWIDDLED, 256, 256, bump,
+                       PVR_TXRFMT_BUMP | PVR_TXRFMT_TWIDDLED, 256, 256, sprite,
                        PVR_FILTER_NONE);
 
     ctx.gen.specular = PVR_SPECULAR_ENABLE;
@@ -275,8 +294,8 @@ static void draw_bump(float x, float y, float w, float h) {
     vert.argb = 0;
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f - 128.0f;
-    vert.y = 240.0f - 128.0f;
+    vert.x = x - w;
+    vert.y = y - h;
     vert.z = 1.0f;
     vert.u = 0.0f;
     vert.v = 0.0f;
@@ -284,8 +303,8 @@ static void draw_bump(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f + 128.0f;
-    vert.y = 240.0f - 128.0f;
+    vert.x = x + w;
+    vert.y = y - h;
     vert.z = 1.0f;
     vert.u = 1.0f;
     vert.v = 0.0f;
@@ -293,8 +312,8 @@ static void draw_bump(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX;
-    vert.x = 320.0f - 128.0f;
-    vert.y = 240.0f + 128.0f;
+    vert.x = x - w;
+    vert.y = y + h;
     vert.z = 1.0f;
     vert.u = 0.0f;
     vert.v = 1.0f;
@@ -302,8 +321,8 @@ static void draw_bump(float x, float y, float w, float h) {
     pvr_prim(&vert, sizeof(vert));
 
     vert.flags = PVR_CMD_VERTEX_EOL;
-    vert.x = 320.0f + 128.0f;
-    vert.y = 240.0f + 128.0f;
+    vert.x = x + w;
+    vert.y = y + h;
     vert.z = 1.0f;
     vert.u = 1.0f;
     vert.v = 1.0f;
@@ -318,15 +337,21 @@ static void do_frame() {
     pvr_poly_hdr_t hdr;
     int i = 0;
 
+    ++counter;
+
+    light_pos.x = 320.0f + sinf(((float)counter / 120.0f)) * 280.0f;
+    light_pos.y = 240.0f + cosf(((float)counter / 120.0f)) * 200.0f;
+
     pvr_wait_ready();
     pvr_scene_begin();
 
     pvr_list_begin(PVR_LIST_OP_POLY);
-    draw_bump(0, 0, 0, 0);
+    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f);
     pvr_list_finish();
 
     pvr_list_begin(PVR_LIST_PT_POLY);
-    draw_sprite(0, 0, 0, 0);
+    draw_sprite(txr, 320.0f, 240.0f, 128.0f, 128.0f, true);
+    draw_sprite(light, light_pos.x, light_pos.y, 50.0f, 50.0f, false);
     pvr_list_finish();
 
     pvr_scene_finish();
@@ -404,7 +429,7 @@ static pvr_init_params_t pvr_params = {
 };
 
 int main(int argc, char *argv[]) {
-    //gdb_init();
+    gdb_init();
     printf("---KallistiOS PVR Bumpmap Example---\n");
     printf("Press A to switch between textured and non-textured mode.\n");
     printf("Use up and down on the joystick to control the bumpiness.\n");
