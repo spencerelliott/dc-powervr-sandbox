@@ -46,7 +46,7 @@ typedef struct Vector2 {
     float y;
 } Vector2_t;
 
-static Vector2_t light_pos;
+static Vector2_t light_pos, light_pos2;
 
 float angle_between(Vector2_t* v1, Vector2_t* v2) {
     return atan2f(v2->y - v1->y, v2->x - v1->x);
@@ -207,28 +207,26 @@ static int check_start() {
     return 0;
 }
 
-static void draw_sprite(pvr_ptr_t sprite, float x, float y, float w, float h, bool is_bumped) {
+static void draw_sprite(int list, pvr_ptr_t sprite, int texformat, float x, float y, float w, float h, bool is_bumped) {
     pvr_poly_cxt_t ctx;
     pvr_poly_hdr_t hdr;
     pvr_vertex_t vert;
 
-    pvr_poly_cxt_txr(&ctx, PVR_LIST_PT_POLY,
-                       PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED |
-                       PVR_TXRFMT_VQ_ENABLE, 256, 256, sprite, PVR_FILTER_NONE);
+    pvr_poly_cxt_txr(&ctx, list, texformat, 256, 256, sprite, PVR_FILTER_NONE);
 
     if (is_bumped) {
         ctx.blend.src = PVR_BLEND_DESTCOLOR;
         ctx.blend.dst = PVR_BLEND_ZERO;
     } else {
         ctx.blend.src = PVR_BLEND_ONE;
-        ctx.blend.dst = PVR_BLEND_ONE;
+        ctx.blend.dst = PVR_BLEND_ZERO;
     }
 
     pvr_poly_compile(&hdr, &ctx);
 
     pvr_prim(&hdr, sizeof(hdr));
 
-    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
+    vert.argb = PVR_PACK_COLOR(1.0f, 0.2f, 0.2f, 0.2f);
     vert.oargb = 0;
 
     vert.flags = PVR_CMD_VERTEX;
@@ -268,17 +266,20 @@ static void draw_sprite(pvr_ptr_t sprite, float x, float y, float w, float h, bo
     pvr_prim(&vert, sizeof(vert));
 }
 
-static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h) {
+static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h, Vector2_t* light_position = nullptr) {
     pvr_poly_cxt_t ctx;
     pvr_poly_hdr_t hdr;
     pvr_vertex_t vert;
 
     Vector2_t pos = {.x = x, y = y};
 
-    // float angle = ((float)(++counter % 240) / 240.0f) * (F_PI * 2.0f);
-    float angle = angle_between(&pos, &light_pos);
-    bumpiness = CLAMP(0.2f, 1.0f, distance_from(&pos, &light_pos) / 200.0f);
-
+    float angle = 0.0f;
+    if (light_position != nullptr) {
+        angle = angle_between(&pos, light_position);
+        //bumpiness = CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 200.0f);
+        bumpiness = 0.8f;
+    }
+    
     pvr_poly_cxt_txr(&ctx, PVR_LIST_OP_POLY,
                        PVR_TXRFMT_BUMP | PVR_TXRFMT_TWIDDLED, 256, 256, sprite,
                        PVR_FILTER_NONE);
@@ -342,29 +343,29 @@ static void do_frame() {
     light_pos.x = 320.0f + sinf(((float)counter / 120.0f)) * 280.0f;
     light_pos.y = 240.0f + cosf(((float)counter / 120.0f)) * 200.0f;
 
+    light_pos2.x = 320.0f + cosf(((float)counter / 60.0f)) * 280.0f;
+    light_pos2.y = 240.0f;
+
     pvr_wait_ready();
     pvr_scene_begin();
 
     pvr_list_begin(PVR_LIST_OP_POLY);
-    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f);
+    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
+    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos2);
     pvr_list_finish();
 
     pvr_list_begin(PVR_LIST_PT_POLY);
-    draw_sprite(txr, 320.0f, 240.0f, 128.0f, 128.0f, true);
-    draw_sprite(light, light_pos.x, light_pos.y, 50.0f, 50.0f, false);
+    draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
+    pvr_list_finish();
+
+    pvr_list_begin(PVR_LIST_TR_POLY);
+    draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
     pvr_list_finish();
 
     pvr_scene_finish();
 
     return;
-
-    for (i = 0; i < 4; i++) {
-        verts[i].oargb = pvr_pack_bump(bumpiness, F_PI / 4.0f, 5.0f * F_PI / 6.0f);
-        verts[i].argb = 0;
-    }
-
-    pvr_wait_ready();
-    pvr_scene_begin();
 
     // pvr_list_begin(PVR_LIST_OP_POLY);
     // pvr_prim(&phdr[0], sizeof(pvr_poly_mod_hdr_t));
@@ -406,17 +407,6 @@ static void do_frame() {
     // mod.d1 = mod.d2 = mod.d3 = mod.d4 = mod.d5 = mod.d6 = 0;
     // pvr_prim(&mod, sizeof(mod));
     // pvr_list_finish();
-
-    pvr_list_begin(PVR_LIST_PT_POLY);
-    pvr_prim(&phdr[1], sizeof(pvr_poly_mod_hdr_t));
-
-    for (i = 0; i < 4; i++) {
-        verts[4+i].argb = 0xffffffff;
-        pvr_prim(&verts[4 + i], sizeof(pvr_vertex_t));
-    }
-    pvr_list_finish();
-
-    pvr_scene_finish();
 }
 
 static pvr_init_params_t pvr_params = {
