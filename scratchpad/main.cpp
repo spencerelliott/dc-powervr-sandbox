@@ -218,15 +218,17 @@ static void draw_sprite(int list, pvr_ptr_t sprite, int texformat, float x, floa
         ctx.blend.src = PVR_BLEND_DESTCOLOR;
         ctx.blend.dst = PVR_BLEND_ZERO;
     } else {
-        ctx.blend.src = PVR_BLEND_ONE;
-        ctx.blend.dst = PVR_BLEND_ZERO;
+        // ctx.blend.src = PVR_BLEND_SRCALPHA;
+        // ctx.blend.dst = PVR_BLEND_INVDESTALPHA;
+        // ctx.blend.dst_enable = PVR_BLEND_ENABLE;
+        // ctx.blend.src_enable = PVR_BLEND_ENABLE;
     }
 
     pvr_poly_compile(&hdr, &ctx);
 
     pvr_prim(&hdr, sizeof(hdr));
 
-    vert.argb = PVR_PACK_COLOR(1.0f, 0.2f, 0.2f, 0.2f);
+    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0);
     vert.oargb = 0;
 
     vert.flags = PVR_CMD_VERTEX;
@@ -276,8 +278,8 @@ static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h, Vect
     float angle = 0.0f;
     if (light_position != nullptr) {
         angle = angle_between(&pos, light_position);
-        //bumpiness = CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 200.0f);
-        bumpiness = 0.8f;
+        bumpiness = 1.0f - CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 128.0f);
+        //bumpiness = 0.8f;
     }
     
     pvr_poly_cxt_txr(&ctx, PVR_LIST_OP_POLY,
@@ -438,6 +440,7 @@ int main(int argc, char *argv[]) {
 
     pvr_mem_free(bump);
     pvr_mem_free(txr);
+    pvr_mem_free(light);
 
     return 0;
 }
