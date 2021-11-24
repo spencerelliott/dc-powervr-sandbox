@@ -25,7 +25,7 @@ static pvr_vertex_t verts[2 * 4];
 
 static pvr_poly_hdr_t phdr[2];
 static float bumpiness = 0.5f;
-static pvr_ptr_t bump, txr, light;
+static pvr_ptr_t bump, txr, light, screen_buffer;
 static int textured = 1;
 
 static float mx = 290.0f, my = 290.0f;
@@ -111,6 +111,10 @@ static void setup() {
     int i = 0;
     pvr_poly_cxt_t cxt;
 
+    if (!(screen_buffer = pvr_mem_malloc(1024 * 512 * 2))) {
+        exit(EXIT_FAILURE);
+    }
+
     /* Load the textures. */
     if(!(bump = load_texture("/rd/bumpmap.raw")))
         exit(EXIT_FAILURE);
@@ -150,36 +154,6 @@ static void setup() {
     // pvr_mod_compile(&mhdr, PVR_LIST_TR_MOD, PVR_MODIFIER_OTHER_POLY, PVR_CULLING_NONE);
     // pvr_mod_compile(&mhdr2, PVR_LIST_TR_MOD, PVR_MODIFIER_INCLUDE_LAST_POLY,
     //                 PVR_CULLING_NONE);
-
-    for (int i = 0; i < 2; i++) {
-        verts[i * 4 + 0].flags = PVR_CMD_VERTEX;
-        verts[i * 4 + 0].x = 320.0f - 128.0f;
-        verts[i * 4 + 0].y = 240.0f - 128.0f;
-        verts[i * 4 + 0].z = 1.0f;
-        verts[i * 4 + 0].u = 0.0f;
-        verts[i * 4 + 0].v = 0.0f;
-
-        verts[i * 4 + 1].flags = PVR_CMD_VERTEX;
-        verts[i * 4 + 1].x = 320.0f + 128.0f;
-        verts[i * 4 + 1].y = 240.0f - 128.0f;
-        verts[i * 4 + 1].z = 1.0f;
-        verts[i * 4 + 0].u = 1.0f;
-        verts[i * 4 + 0].v = 0.0f;
-
-        verts[i * 4 + 2].flags = PVR_CMD_VERTEX;
-        verts[i * 4 + 2].x = 320.0f - 128.0f;
-        verts[i * 4 + 2].y = 240.0f + 128.0f;
-        verts[i * 4 + 2].z = 1.0f;
-        verts[i * 4 + 0].u = 0.0f;
-        verts[i * 4 + 0].v = 1.0f;
-
-        verts[i * 4 + 3].flags = PVR_CMD_VERTEX_EOL;
-        verts[i * 4 + 3].x = 320.0f + 128.0f;
-        verts[i * 4 + 3].y = 240.0f + 128.0f;
-        verts[i * 4 + 3].z = 1.0f;
-        verts[i * 4 + 0].u = 1.0f;
-        verts[i * 4 + 0].v = 1.0f;
-    }
 }
 
 static int check_start() {
@@ -207,6 +181,106 @@ static int check_start() {
     return 0;
 }
 
+static void draw_screen() {
+    pvr_poly_cxt_t ctx;
+    pvr_poly_hdr_t hdr;
+    pvr_vertex_t vert;
+
+    pvr_poly_cxt_txr(&ctx, PVR_LIST_TR_POLY, PVR_TXRFMT_RGB565 | PVR_TXRFMT_NONTWIDDLED, 1024, 512, screen_buffer, PVR_FILTER_NONE);
+    pvr_poly_compile(&hdr, &ctx);
+
+    pvr_prim(&hdr, sizeof(hdr));
+
+    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
+    vert.oargb = 0;
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = 0.0f;
+    vert.y = 0.0f;
+    vert.z = 0.5f;
+    vert.u = 0.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = 640.0f;
+    vert.y = 0.0f;
+    vert.z = 0.5f;
+    vert.u = 0.625f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = 0.0f;
+    vert.y = 480.0f;
+    vert.z = 0.5f;
+    vert.u = 0.0f;
+    vert.v = 0.9375f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX_EOL;
+    vert.x = 640.0f;
+    vert.y = 480.0f;
+    vert.z = 0.5f;
+    vert.u = 0.625f;
+    vert.v = 0.9375f;
+
+    pvr_prim(&vert, sizeof(vert));
+}
+
+static void draw_quad(int list, uint32 color, float x, float y, float z, float w, float h) {
+    pvr_poly_cxt_t ctx;
+    pvr_poly_hdr_t hdr;
+    pvr_vertex_t vert;
+
+    pvr_poly_cxt_col(&ctx, list);
+    pvr_poly_compile(&hdr, &ctx);
+
+    pvr_prim(&hdr, sizeof(hdr));
+
+    vert.argb = color;
+    vert.oargb = 0;
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y - h;
+    vert.z = z;
+    vert.u = 0.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x + w;
+    vert.y = y - h;
+    vert.z = z;
+    vert.u = 1.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y + h;
+    vert.z = z;
+    vert.u = 0.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX_EOL;
+    vert.x = x + w;
+    vert.y = y + h;
+    vert.z = z;
+    vert.u = 1.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+}
+
 static void draw_sprite(int list, pvr_ptr_t sprite, int texformat, float x, float y, float w, float h, bool is_bumped) {
     pvr_poly_cxt_t ctx;
     pvr_poly_hdr_t hdr;
@@ -218,17 +292,21 @@ static void draw_sprite(int list, pvr_ptr_t sprite, int texformat, float x, floa
         ctx.blend.src = PVR_BLEND_DESTCOLOR;
         ctx.blend.dst = PVR_BLEND_ZERO;
     } else {
-        // ctx.blend.src = PVR_BLEND_SRCALPHA;
-        // ctx.blend.dst = PVR_BLEND_INVDESTALPHA;
-        // ctx.blend.dst_enable = PVR_BLEND_ENABLE;
-        // ctx.blend.src_enable = PVR_BLEND_ENABLE;
+        ctx.depth.comparison = PVR_DEPTHCMP_ALWAYS;
+        ctx.depth.write = PVR_DEPTHWRITE_ENABLE;
+        ctx.gen.alpha = PVR_ALPHA_ENABLE;
+        ctx.txr.alpha = PVR_ALPHA_ENABLE;
+        ctx.blend.src = PVR_BLEND_SRCALPHA;
+        ctx.blend.dst = PVR_BLEND_INVDESTALPHA;
+        ctx.blend.src_enable = PVR_BLEND_ENABLE;
+        ctx.blend.dst_enable = PVR_BLEND_ENABLE;
     }
 
     pvr_poly_compile(&hdr, &ctx);
 
     pvr_prim(&hdr, sizeof(hdr));
 
-    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0);
+    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
     vert.oargb = 0;
 
     vert.flags = PVR_CMD_VERTEX;
@@ -278,8 +356,8 @@ static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h, Vect
     float angle = 0.0f;
     if (light_position != nullptr) {
         angle = angle_between(&pos, light_position);
-        bumpiness = 1.0f - CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 128.0f);
-        //bumpiness = 0.8f;
+        //bumpiness = 1.0f - CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 128.0f);
+        bumpiness = 0.8f;
     }
     
     pvr_poly_cxt_txr(&ctx, PVR_LIST_OP_POLY,
@@ -348,8 +426,10 @@ static void do_frame() {
     light_pos2.x = 320.0f + cosf(((float)counter / 60.0f)) * 280.0f;
     light_pos2.y = 240.0f;
 
+    uint32 tx = 1024, ty = 512;
+
     pvr_wait_ready();
-    pvr_scene_begin();
+    pvr_scene_begin_txr(screen_buffer, &tx, &ty);
 
     pvr_list_begin(PVR_LIST_OP_POLY);
     draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
@@ -360,9 +440,21 @@ static void do_frame() {
     draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
     pvr_list_finish();
 
+    pvr_scene_finish();
+
+    pvr_wait_ready();
+
+    pvr_scene_begin();
+
     pvr_list_begin(PVR_LIST_TR_POLY);
-    draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
-    draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    
+    draw_screen();
+
+    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.4f, 0.0f, 0.0f, 0.0f), 320.0f, 240.0f, 0.65f, 320.0f, 240.0f);
+    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos.x, light_pos.y, 1.0f, 50.0f, 50.0f);
+    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos2.x, light_pos2.y, 1.0f, 50.0f, 50.0f);
     pvr_list_finish();
 
     pvr_scene_finish();
