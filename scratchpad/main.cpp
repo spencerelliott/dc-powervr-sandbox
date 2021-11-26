@@ -607,38 +607,53 @@ static void do_frame() {
 
     uint32 tx = 1024, ty = 512;
 
-    pvr_wait_ready();
-    pvr_scene_begin();
-    //pvr_scene_begin_txr(screen_buffer, &tx, &ty);
+    #define USE_ACCUMULATION
 
+    pvr_wait_ready();
+
+    #ifdef USE_ACCUMULATION
+    pvr_scene_begin();
     uint32_t list = PVR_LIST_TR_POLY;
+    #else
+    pvr_scene_begin_txr(screen_buffer, &tx, &ty);
+    uint32_t list = PVR_LIST_OP_POLY;
+    #endif    
 
     pvr_list_begin(list);
+    #ifdef USE_ACCUMULATION
     draw_bumped_sprite(txr, bump, list, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
+    #else
+    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
+    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos2);
+    #endif
     pvr_list_finish();
 
-    // pvr_list_begin(PVR_LIST_PT_POLY);
-    // draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
-    // pvr_list_finish();
+    #ifndef USE_ACCUMULATION
+    pvr_list_begin(PVR_LIST_PT_POLY);
+    draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
+    pvr_list_finish();
+    #endif
 
     pvr_scene_finish();
 
-    // pvr_wait_ready();
+    #ifndef USE_ACCUMULATION
+    pvr_wait_ready();
 
-    // pvr_scene_begin();
+    pvr_scene_begin();
 
-    // pvr_list_begin(PVR_LIST_TR_POLY);
-    // //draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
-    // //draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    pvr_list_begin(PVR_LIST_TR_POLY);
+    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
     
-    // draw_screen();
+    draw_screen();
 
-    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.4f, 0.0f, 0.0f, 0.0f), 320.0f, 240.0f, 0.65f, 320.0f, 240.0f);
-    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos.x, light_pos.y, 1.0f, 50.0f, 50.0f);
-    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos2.x, light_pos2.y, 1.0f, 50.0f, 50.0f);
-    // pvr_list_finish();
+    //draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.4f, 0.0f, 0.0f, 0.0f), 320.0f, 240.0f, 0.65f, 320.0f, 240.0f);
+    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos.x, light_pos.y, 1.0f, 50.0f, 50.0f);
+    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos2.x, light_pos2.y, 1.0f, 50.0f, 50.0f);
+    pvr_list_finish();
 
-    // pvr_scene_finish();
+    pvr_scene_finish();
+    #endif
 
     return;
 
@@ -709,6 +724,12 @@ int main(int argc, char *argv[]) {
     /* Go as long as the user hasn't pressed start on controller 1. */
     while(!check_start()) {
         do_frame();
+
+        pvr_stats_t stats;
+
+        pvr_get_stats(&stats);
+        dbglog(DBG_DEBUG, "3D Stats: %d VBLs, frame rate ~%f fps\n",
+            stats.vbl_count, stats.frame_rate);
     }
 
     pvr_mem_free(bump);
