@@ -411,6 +411,185 @@ static void draw_bump(pvr_ptr_t sprite, float x, float y, float w, float h, Vect
     pvr_prim(&vert, sizeof(vert));
 }
 
+static void draw_bumped_sprite(pvr_ptr_t sprite, pvr_ptr_t bump, uint32_t list,  float x, float y, float w, float h, Vector2_t* light_position = nullptr) {
+    pvr_poly_cxt_t ctx, ctx2;
+    pvr_poly_hdr_t hdr, hdr2;
+    pvr_vertex_t vert;
+
+    Vector2_t pos = {.x = x, y = y};
+
+    float angle = 0.0f;
+    if (light_position != nullptr) {
+        angle = angle_between(&pos, light_position);
+        //bumpiness = 1.0f - CLAMP(0.2f, 1.0f, distance_from(&pos, light_position) / 128.0f);
+        bumpiness = 0.8f;
+    }
+    
+    pvr_poly_cxt_txr(&ctx, list,
+                       PVR_TXRFMT_BUMP | PVR_TXRFMT_TWIDDLED, 256, 256, bump,
+                       PVR_FILTER_NONE);
+
+    ctx.gen.specular = PVR_SPECULAR_ENABLE;
+    ctx.txr.env = PVR_TXRENV_DECAL;
+
+    // Enable the accumulation buffer write
+    ctx.blend.src_enable = PVR_BLEND_DISABLE;
+    ctx.blend.dst_enable = PVR_BLEND_ENABLE;
+    ctx.blend.src = PVR_BLEND_ONE;
+    ctx.blend.dst = PVR_BLEND_ZERO;
+
+    pvr_poly_compile(&hdr, &ctx);
+
+    // Write the bump map
+    pvr_prim(&hdr, sizeof(hdr));
+
+    vert.oargb = pvr_pack_bump(bumpiness, F_PI / 4.0f, angle);
+    vert.argb = 0xFF000000;
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x + w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX_EOL;
+    vert.x = x + w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    // Write the sprite to the buffer
+    pvr_poly_cxt_txr(&ctx2, list, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 256, 256, sprite, PVR_FILTER_NONE);
+
+    ctx2.blend.src_enable = PVR_BLEND_DISABLE;
+    ctx2.blend.dst_enable = PVR_BLEND_ENABLE;
+    ctx2.blend.src = PVR_BLEND_DESTCOLOR;
+    ctx2.blend.dst = PVR_BLEND_ZERO;
+
+    ctx2.txr.env = PVR_TXRENV_MODULATEALPHA;
+
+    pvr_poly_compile(&hdr2, &ctx2);
+
+    pvr_prim(&hdr2, sizeof(hdr2));
+
+    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
+    vert.oargb = 0;
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x + w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX_EOL;
+    vert.x = x + w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    // Draw the final accumulated sprite
+    pvr_poly_cxt_col(&ctx2, list);
+
+    ctx2.blend.src_enable = PVR_BLEND_ENABLE;
+    ctx2.blend.dst_enable = PVR_BLEND_DISABLE;
+    ctx2.blend.src = PVR_BLEND_SRCALPHA;
+    ctx2.blend.dst = PVR_BLEND_INVSRCALPHA;
+
+    ctx2.txr.env = 0;
+    ctx2.txr.enable = PVR_TEXTURE_DISABLE;
+
+    pvr_poly_compile(&hdr, &ctx2);
+
+    pvr_prim(&hdr, sizeof(hdr));
+
+    vert.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
+    vert.oargb = 0;
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x + w;
+    vert.y = y - h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 0.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX;
+    vert.x = x - w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 0.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+
+    vert.flags = PVR_CMD_VERTEX_EOL;
+    vert.x = x + w;
+    vert.y = y + h;
+    vert.z = 1.0f;
+    vert.u = 1.0f;
+    vert.v = 1.0f;
+
+    pvr_prim(&vert, sizeof(vert));
+}
+
 static void do_frame() {
     pvr_modifier_vol_t mod;
     pvr_vertex_t vert;
@@ -429,35 +608,37 @@ static void do_frame() {
     uint32 tx = 1024, ty = 512;
 
     pvr_wait_ready();
-    pvr_scene_begin_txr(screen_buffer, &tx, &ty);
-
-    pvr_list_begin(PVR_LIST_OP_POLY);
-    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
-    draw_bump(bump, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos2);
-    pvr_list_finish();
-
-    pvr_list_begin(PVR_LIST_PT_POLY);
-    draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
-    pvr_list_finish();
-
-    pvr_scene_finish();
-
-    pvr_wait_ready();
-
     pvr_scene_begin();
+    //pvr_scene_begin_txr(screen_buffer, &tx, &ty);
 
-    pvr_list_begin(PVR_LIST_TR_POLY);
-    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
-    //draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
-    
-    draw_screen();
+    uint32_t list = PVR_LIST_TR_POLY;
 
-    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.4f, 0.0f, 0.0f, 0.0f), 320.0f, 240.0f, 0.65f, 320.0f, 240.0f);
-    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos.x, light_pos.y, 1.0f, 50.0f, 50.0f);
-    draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos2.x, light_pos2.y, 1.0f, 50.0f, 50.0f);
+    pvr_list_begin(list);
+    draw_bumped_sprite(txr, bump, list, 320.0f, 240.0f, 128.0f, 128.0f, &light_pos);
     pvr_list_finish();
 
+    // pvr_list_begin(PVR_LIST_PT_POLY);
+    // draw_sprite(PVR_LIST_PT_POLY, txr, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 320.0f, 240.0f, 128.0f, 128.0f, true);
+    // pvr_list_finish();
+
     pvr_scene_finish();
+
+    // pvr_wait_ready();
+
+    // pvr_scene_begin();
+
+    // pvr_list_begin(PVR_LIST_TR_POLY);
+    // //draw_sprite(PVR_LIST_TR_POLY, light, light_pos.x, light_pos.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    // //draw_sprite(PVR_LIST_TR_POLY, light, light_pos2.x, light_pos2.y, PVR_TXRFMT_ARGB4444 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 50.0f, 50.0f, false);
+    
+    // draw_screen();
+
+    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.4f, 0.0f, 0.0f, 0.0f), 320.0f, 240.0f, 0.65f, 320.0f, 240.0f);
+    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos.x, light_pos.y, 1.0f, 50.0f, 50.0f);
+    // draw_quad(PVR_LIST_TR_POLY, PVR_PACK_COLOR(0.65f, 1.0f, 0.0f, 0.0f), light_pos2.x, light_pos2.y, 1.0f, 50.0f, 50.0f);
+    // pvr_list_finish();
+
+    // pvr_scene_finish();
 
     return;
 
@@ -513,7 +694,7 @@ static pvr_init_params_t pvr_params = {
 };
 
 int main(int argc, char *argv[]) {
-    gdb_init();
+    //gdb_init();
     printf("---KallistiOS PVR Bumpmap Example---\n");
     printf("Press A to switch between textured and non-textured mode.\n");
     printf("Use up and down on the joystick to control the bumpiness.\n");
