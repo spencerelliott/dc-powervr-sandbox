@@ -55,14 +55,14 @@ KOS_INIT_ROMDISK(romdisk);
 
 static pvr_vertex_t vert_buffer[VERT_COUNT] = {
     // Triangle 1
-    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
-    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE},
-    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR, .u = 1.0f, .v = 1.0f, .argb = 0xFFFFFFFF},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE, .u = 0.0f, .v = 1.0f, .argb = 0xFFFFFFFF},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE, .u = 0.0f, .v = 0.0f, .argb = 0xFFFFFFFF},
 
     // Triangle 2
-    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR},
-    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
-    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR, .u = 0.0f, .v = 0.0f, .argb = 0xFFFFFFFF},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR, .u = 1.0f, .v = 1.0f, .argb = 0xFFFFFFFF},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_FAR, .u = 1.0f, .v = 0.0f, .argb = 0xFFFFFFFF},
 
     // Triangle 3
     {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_CLOSE},
@@ -683,7 +683,7 @@ static void do_frame() {
 
     pvr_list_begin(PVR_LIST_OP_POLY);
     
-    pvr_poly_cxt_col(&ctx, PVR_LIST_OP_POLY);
+    pvr_poly_cxt_txr(&ctx, PVR_LIST_OP_POLY, PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED | PVR_TXRFMT_VQ_ENABLE, 256, 256, txr, PVR_FILTER_NONE);
     pvr_poly_compile(&hdr, &ctx);
 
     pvr_prim(&hdr, sizeof(hdr));
