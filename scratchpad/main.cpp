@@ -41,6 +41,80 @@ KOS_INIT_ROMDISK(romdisk);
 
 #define CLAMP(low, high, value) (value < low ? low : (value > high ? high : value))
 
+#define Z_FAR   0.2f
+#define Z_CLOSE 0.8f
+
+#define X_FAR   120.0f
+#define X_CLOSE  240.0f
+
+#define Y_FAR   120.0f
+#define Y_CLOSE  240.0f
+
+#define TRI_COUNT   12
+#define VERT_COUNT  TRI_COUNT*3
+
+static pvr_vertex_t vert_buffer[VERT_COUNT] = {
+    // Triangle 1
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+
+    // Triangle 2
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+
+    // Triangle 3
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_FAR},
+
+    // Triangle 4
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+
+    // Triangle 5
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_FAR},
+
+    // Triangle 6
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_FAR},
+
+    // Triangle 7
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_CLOSE},
+
+    // Triangle 8
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR},
+
+    // Triangle 9
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_FAR, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_FAR, .z = Z_CLOSE},
+
+    // Triangle 10
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_FAR},
+
+    // Triangle 11
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_FAR},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+
+    // Triangle 12
+    {.flags = PVR_CMD_VERTEX, .x = X_CLOSE, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX, .x = X_FAR, .y = Y_CLOSE, .z = Z_CLOSE},
+    {.flags = PVR_CMD_VERTEX_EOL, .x = X_CLOSE, .y = Y_FAR, .z = Z_CLOSE},
+};
+
 typedef struct Vector2 {
     float x;
     float y;
@@ -154,6 +228,10 @@ static void setup() {
     // pvr_mod_compile(&mhdr, PVR_LIST_TR_MOD, PVR_MODIFIER_OTHER_POLY, PVR_CULLING_NONE);
     // pvr_mod_compile(&mhdr2, PVR_LIST_TR_MOD, PVR_MODIFIER_INCLUDE_LAST_POLY,
     //                 PVR_CULLING_NONE);
+
+    for (i = 0; i < VERT_COUNT; i++) {
+        vert_buffer[i].argb = 0xFFFFFFFF;
+    }
 }
 
 static int check_start() {
@@ -599,6 +677,24 @@ static void do_frame() {
 
     ++counter;
 
+    pvr_wait_ready();
+
+    pvr_scene_begin();
+
+    pvr_list_begin(PVR_LIST_OP_POLY);
+    
+    pvr_poly_cxt_col(&ctx, PVR_LIST_OP_POLY);
+    pvr_poly_compile(&hdr, &ctx);
+
+    pvr_prim(&hdr, sizeof(hdr));
+    pvr_prim(&vert_buffer, sizeof(pvr_vertex_t)*VERT_COUNT);
+
+    pvr_list_finish();
+
+    pvr_scene_finish();
+
+    return;
+
     light_pos.x = 320.0f + sinf(((float)counter / 120.0f)) * 280.0f;
     light_pos.y = 240.0f + cosf(((float)counter / 120.0f)) * 200.0f;
 
@@ -607,7 +703,7 @@ static void do_frame() {
 
     uint32 tx = 1024, ty = 512;
 
-    #define USE_ACCUMULATION
+    //#define USE_ACCUMULATION
 
     pvr_wait_ready();
 
