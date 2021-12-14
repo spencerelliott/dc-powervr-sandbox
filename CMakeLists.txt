@@ -35,6 +35,12 @@ set(
     scratchpad/main.cpp
 )
 
+set(
+    LIGHTING_SOURCES
+    scratchpad/lighting.cpp
+    scratchpad/quaternion.cpp
+)
+
 if(ENGINE_DEBUG)
     add_definitions(-DENGINE_DEBUG)
 endif()
@@ -98,7 +104,10 @@ link_libraries(m)
 if(PLATFORM_DREAMCAST)
     add_executable(PVRTest ${EXTRA_OBJS} ${SOURCES})
     add_executable(PVRTest_Scratch ${EXTRA_OBJS} ${SCRATCH_SOURCES})
+    add_executable(PVRTest_Lighting ${EXTRA_OBJS} ${LIGHTING_SOURCES})
+    include_directories(PVRTest_Lighting scratchpad/)
     set_target_properties(PVRTest_Scratch PROPERTIES LINKER_LANGUAGE CXX) 
+    set_target_properties(PVRTest_Lighting PROPERTIES LINKER_LANGUAGE CXX) 
 else()
     add_definitions(-g)
     if(WIN32)
